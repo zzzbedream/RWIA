@@ -29,8 +29,6 @@ const eslintConfig = defineConfig([
         "out/**",
         "build/**",
         "next-env.d.ts",
-        // The Supabase store is a typed stub; suppress until the SQL impl lands.
-        "src/lib/relayer/store/supabase.ts",
     ]),
 ]);
 
