@@ -62,7 +62,7 @@ jobs:
         run: slither . --print human-summary > slither.md || true
       - name: Comment Slither report
         if: github.event_name == 'pull_request' && always()
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           path: contracts/slither.md
           header: slither
@@ -107,7 +107,7 @@ jobs:
           fi
       - name: Post gas diff comment
         if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           path: /tmp/gas-comment.md
           header: gas-snapshot
