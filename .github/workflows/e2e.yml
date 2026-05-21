@@ -1,0 +1,128 @@
+name: e2e
+
+# End-to-end integration: deploy contracts on an Anvil Ronin fork, run the
+# Next.js relayer against it, post a signed intent through the real
+# /api/intent endpoint and assert the NFT moved on-chain. This is the gate
+# that prevents the "mock-in-mainnet" anti-pattern: the same flow that runs
+# here is the flow that ships.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  end-to-end:
+    name: deploy + relay + assert
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Install Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: app/package-lock.json
+
+      - name: forge test (unit + invariant)
+        working-directory: contracts
+        run: forge test -vv
+
+      - name: Spin up anvil (forked Ronin mainnet)
+        run: |
+          anvil \
+            --fork-url ${{ secrets.RONIN_MAINNET_RPC_URL || 'https://api.roninchain.com/rpc' }} \
+            --chain-id 2020 \
+            --port 8545 \
+            --silent &
+          for i in {1..30}; do
+            if curl -fsS -X POST http://127.0.0.1:8545 \
+                -H 'content-type: application/json' \
+                -d '{"jsonrpc":"2.0","method":"eth_chainId","id":1}' > /dev/null; then break; fi
+            sleep 1
+          done
+          echo "anvil is up"
+
+      - name: Deploy contracts on the fork
+        working-directory: contracts
+        env:
+          # Anvil's account #0 — deterministic, public, NEVER use on real chains.
+          PRIVATE_KEY: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+          ADMIN_ADDRESS: 0xf39Fd6e51aad88F6F4ce6aB8827279cfFFb92266
+          KEEPER_ADDRESS: 0xf39Fd6e51aad88F6F4ce6aB8827279cfFFb92266
+          TIMELOCK_DELAY_SECONDS: "1"
+        run: |
+          forge script script/Deploy.s.sol:Deploy \
+            --rpc-url http://127.0.0.1:8545 \
+            --broadcast --slow \
+            --private-key $PRIVATE_KEY -vvv | tee deploy.log
+          grep -oE '0x[0-9a-fA-F]{40}' deploy.log | tail -n 3
+
+      - name: Extract proxy address
+        id: addr
+        working-directory: contracts
+        run: |
+          PROXY=$(jq -r '.transactions[] | select(.contractName=="ERC1967Proxy") | .contractAddress' \
+            broadcast/Deploy.s.sol/2020/run-latest.json | head -n 1)
+          echo "proxy=$PROXY" >> "$GITHUB_OUTPUT"
+          echo "Aggregator proxy at $PROXY"
+
+      - name: npm ci
+        working-directory: app
+        run: npm ci --no-audit --no-fund
+
+      - name: Boot Next.js relayer in test mode
+        working-directory: app
+        env:
+          NEXT_PUBLIC_AGGREGATOR_ADDRESS: ${{ steps.addr.outputs.proxy }}
+          NEXT_PUBLIC_DEFAULT_CHAIN_ID: "2020"
+          RELAYER_CHAIN_ID: "2020"
+          RELAYER_RPC_URL: http://127.0.0.1:8545
+          KEEPER_PRIVATE_KEY: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+          RWIA_PAYMENT_PROVIDER: mock
+          RWIA_REQUIRE_PAYMENT: "false"
+          NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+        run: |
+          NODE_OPTIONS=--max-old-space-size=4096 npm run build
+          NODE_OPTIONS=--max-old-space-size=4096 npm start &
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:3000/api/health > /dev/null; then break; fi
+            sleep 1
+          done
+          curl -s http://127.0.0.1:3000/api/health
+
+      - name: Run scripted E2E intent
+        working-directory: app
+        env:
+          AGGREGATOR_PROXY: ${{ steps.addr.outputs.proxy }}
+          ANVIL_RPC: http://127.0.0.1:8545
+          USER_PRIVATE_KEY: 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d  # anvil #1
+          KEEPER_PRIVATE_KEY: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+        run: node ../scripts/e2e-intent.mjs
+
+  contracts-only:
+    name: forge fmt + size
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - working-directory: contracts
+        run: |
+          forge fmt --check
+          forge build --sizes

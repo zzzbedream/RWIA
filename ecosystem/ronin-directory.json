@@ -1,0 +1,84 @@
+{
+    "name": "Ronin Waypoint Intent Aggregator",
+    "slug": "rwia",
+    "shortDescription": "Buy NFTs on Ronin with off-chain payment. EIP-712 signed intents, on-chain delivery by a Keeper.",
+    "description": "Ronin Waypoint Intent Aggregator (RWIA) removes the crypto-friction wall for NFT buyers on Ronin. Users sign an EIP-712 intent and pay the Keeper off-chain (fiat or stablecoin). The Keeper, already in possession of the NFT, delivers it on-chain to the user's wallet, paying the gas. The contract enforces signature validity, deadlines and intent-hash uniqueness; upgrades are gated by an on-chain TimelockController so V2 can introduce Chainlink CCIP cross-chain dispatch without state loss.",
+    "category": "dApps & Tools",
+    "subcategories": ["NFT", "Infrastructure", "Developer Tools"],
+    "logoUrl": "https://raw.githubusercontent.com/<YOUR-ORG>/rwia/main/app/public/logo.svg",
+    "websiteUrl": "https://rwia.vertsun.io",
+    "appUrl": "https://rwia.vertsun.io/app",
+    "social": {
+        "twitter": "",
+        "discord": "",
+        "github": "https://github.com/<YOUR-ORG>/rwia",
+        "documentation": "https://github.com/<YOUR-ORG>/rwia#readme"
+    },
+    "chains": [
+        {
+            "name": "Ronin Mainnet",
+            "chainId": 2020,
+            "status": "live",
+            "contracts": {
+                "IntentAggregator": "0x0000000000000000000000000000000000000000",
+                "TimelockController": "0x0000000000000000000000000000000000000000"
+            }
+        },
+        {
+            "name": "Ronin Saigon",
+            "chainId": 202601,
+            "status": "live",
+            "contracts": {
+                "IntentAggregator": "0x0000000000000000000000000000000000000000",
+                "TimelockController": "0x0000000000000000000000000000000000000000"
+            }
+        }
+    ],
+    "integrations": [
+        "Ronin Wallet",
+        "Ronin Waypoint",
+        "Ronin Name Service (RNS)",
+        "delegate.xyz registry"
+    ],
+    "roadmap": [
+        {
+            "version": "V1",
+            "status": "current",
+            "summary": "Native NFT settlement on Ronin against off-chain payment."
+        },
+        {
+            "version": "V2",
+            "status": "planned",
+            "summary": "Chainlink CCIP cross-chain dispatch with Dead Letter Queue (UUPS upgrade)."
+        }
+    ],
+    "security": {
+        "audits": [
+            {
+                "type": "self-audit",
+                "tools": ["Slither", "Aderyn", "Foundry fuzz", "Foundry invariant"],
+                "url": "https://github.com/<YOUR-ORG>/rwia/blob/main/SECURITY.md"
+            }
+        ],
+        "multisigAdmin": true,
+        "upgradeTimelockSeconds": 604800,
+        "openSource": true,
+        "license": "MIT"
+    },
+    "tags": [
+        "intent",
+        "nft",
+        "fiat-onramp",
+        "eip-712",
+        "uups",
+        "rbac",
+        "ronin",
+        "waypoint",
+        "rns"
+    ],
+    "team": {
+        "name": "VertSun",
+        "primaryContact": "security@vertsun.io"
+    },
+    "submittedAt": "2026-05-16"
+}

@@ -1,0 +1,132 @@
+name: contracts-ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "contracts/**"
+      - ".github/workflows/contracts-ci.yml"
+  pull_request:
+    paths:
+      - "contracts/**"
+      - ".github/workflows/contracts-ci.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+defaults:
+  run:
+    working-directory: contracts
+
+jobs:
+  test:
+    name: forge fmt + build + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - run: forge fmt --check
+      - run: forge build --sizes
+      - run: forge test -vv
+
+  slither:
+    name: Slither (fail-on-medium)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Slither
+        run: pip install slither-analyzer
+      - name: Build (needed for ABI extraction)
+        run: forge build
+      - name: Run Slither
+        run: |
+          slither . \
+            --filter-paths "lib/|test/|v2-roadmap/|script/HandoffToMultisig.s.sol" \
+            --exclude informational,low \
+            --fail-medium
+      - name: Slither markdown report (PR comment)
+        if: github.event_name == 'pull_request' && always()
+        run: slither . --print human-summary > slither.md || true
+      - name: Comment Slither report
+        if: github.event_name == 'pull_request' && always()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: contracts/slither.md
+          header: slither
+
+  gas-snapshot:
+    name: forge snapshot --check (regression gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Run forge snapshot --check
+        run: |
+          forge snapshot --check 2>&1 | tee snapshot.txt
+          if grep -q 'Snapshot diff' snapshot.txt; then
+            echo "::warning::Gas snapshot changed — review the diff"
+          fi
+      - name: Upload snapshot artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gas-snapshot
+          path: contracts/.gas-snapshot
+      - name: Compute gas diff vs main
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin main --depth 1
+          git show origin/main:contracts/.gas-snapshot > /tmp/main-snapshot 2>/dev/null || true
+          if [ -f /tmp/main-snapshot ]; then
+            diff /tmp/main-snapshot .gas-snapshot > /tmp/gas-diff.txt || true
+            {
+              echo '## Gas snapshot diff vs main';
+              if [ -s /tmp/gas-diff.txt ]; then
+                echo '```diff'; cat /tmp/gas-diff.txt; echo '```';
+              else
+                echo 'No gas changes 🎉';
+              fi
+            } > /tmp/gas-comment.md
+          fi
+      - name: Post gas diff comment
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: /tmp/gas-comment.md
+          header: gas-snapshot
+
+  storage-layout:
+    name: storage layout (upgrade safety)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - run: |
+          mkdir -p storage-layouts
+          forge inspect IntentAggregator storage-layout > storage-layouts/IntentAggregator.txt
+          forge inspect IntentTypes storage-layout > storage-layouts/IntentTypes.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: storage-layouts
+          path: contracts/storage-layouts

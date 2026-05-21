@@ -1,0 +1,65 @@
+name: CI — Forge test & gas snapshot
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "contracts/**"
+      - ".github/workflows/test.yml"
+  push:
+    branches: [main]
+    paths:
+      - "contracts/**"
+
+defaults:
+  run:
+    working-directory: contracts
+
+jobs:
+  test:
+    name: Forge build · test · snapshot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Show versions
+        run: |
+          forge --version
+          cast --version
+
+      - name: Compile contracts
+        run: forge build --sizes
+
+      - name: Check for compiler warnings
+        run: forge build 2>&1 | grep -i "warning" && exit 1 || exit 0
+
+      - name: Run tests (default profile)
+        run: forge test -vvv
+
+      - name: Run gas snapshot
+        run: forge snapshot --check
+
+  ci-deep:
+    name: Deep fuzz (PRs to main only)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Deep fuzz + invariant
+        run: forge test --profile ci -vvvvv

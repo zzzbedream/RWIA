@@ -1,0 +1,43 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+test = "test"
+script = "script"
+cache_path = "cache"
+solc_version = "0.8.24"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+via_ir = false
+bytecode_hash = "none"
+cbor_metadata = false
+ffi = false
+auto_detect_remappings = false
+fs_permissions = [{ access = "read-write", path = "./" }]
+
+[profile.ci]
+verbosity = 4
+fuzz = { runs = 1000 }
+invariant = { runs = 256, depth = 64 }
+
+[profile.deep]
+fuzz = { runs = 10000 }
+invariant = { runs = 1024, depth = 128 }
+
+[fmt]
+line_length = 120
+tab_width = 4
+bracket_spacing = false
+int_types = "long"
+quote_style = "double"
+number_underscore = "thousands"
+
+[rpc_endpoints]
+ronin_saigon = "${RONIN_SAIGON_RPC_URL}"
+ronin_mainnet = "${RONIN_MAINNET_RPC_URL}"
+sepolia = "${SEPOLIA_RPC_URL}"
+
+[etherscan]
+ronin_saigon = { key = "${RONIN_API_KEY}", url = "https://saigon-app.roninchain.com/api", chain = 202601 }
+ronin_mainnet = { key = "${RONIN_API_KEY}", url = "https://app.roninchain.com/api", chain = 2020 }
