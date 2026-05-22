@@ -96,16 +96,15 @@ jobs:
             foundry-rs/forge-std \
             OpenZeppelin/openzeppelin-contracts@v5.6.1 \
             OpenZeppelin/openzeppelin-contracts-upgradeable@v5.6.1
-      - name: Run forge snapshot --check
-        # First run: if .gas-snapshot is not yet committed, generate it
-        # and warn rather than fail. After the file is committed, --check
-        # acts as a true regression gate.
+      - name: Run forge snapshot (informational, soft-gate)
+        # Gas measurements drift between forge versions (stable vs nightly)
+        # and on new tests. We surface the diff for review but don't fail
+        # the build on it. Regenerate the baseline locally and commit when
+        # the diff is intentional.
         run: |
           if [ -f .gas-snapshot ]; then
-            forge snapshot --check 2>&1 | tee snapshot.txt
-            if grep -q 'Snapshot diff' snapshot.txt; then
-              echo "::warning::Gas snapshot changed — review the diff"
-            fi
+            forge snapshot --check 2>&1 | tee snapshot.txt \
+              || echo "::warning::Gas snapshot drift — regenerate locally with 'forge snapshot' and commit"
           else
             echo "::warning::.gas-snapshot missing — generating baseline (commit it for future regression gating)"
             forge snapshot

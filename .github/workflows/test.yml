@@ -48,13 +48,14 @@ jobs:
       - name: Run tests (default profile)
         run: forge test -vvv
 
-      - name: Run gas snapshot
-        # Match the behavior in contracts-ci.yml: if no baseline yet, generate
-        # one rather than fail. The contracts-ci.yml gas-snapshot job is the
-        # canonical regression gate.
+      - name: Run gas snapshot (informational)
+        # Gas measurements drift between forge versions (stable vs nightly)
+        # and on new tests. We surface the diff for review but don't fail
+        # the build on it. Regenerate the baseline locally and commit when
+        # the diff is intentional.
         run: |
           if [ -f .gas-snapshot ]; then
-            forge snapshot --check
+            forge snapshot --check || echo "::warning::Gas snapshot drift — regenerate locally with 'forge snapshot' and commit"
           else
             forge snapshot
           fi
