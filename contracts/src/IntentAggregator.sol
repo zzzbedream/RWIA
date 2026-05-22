@@ -154,6 +154,9 @@ contract IntentAggregator is
         returns (bool)
     {
         bytes32 digest = hashIntent(intent);
+        // The third return value (errArg) is the offending input that caused
+        // the error — informational only. We rely on `err` for the gate.
+        // slither-disable-next-line unused-return
         (address signer, ECDSA.RecoverError err,) = ECDSA.tryRecover(digest, signature);
         if (err != ECDSA.RecoverError.NoError) return false;
         return signer == intent.user;
