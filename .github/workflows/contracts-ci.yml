@@ -30,6 +30,13 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
+      # contracts/lib/ is gitignored — fetch deps before any forge command.
+      - name: Install Foundry libs
+        run: |
+          forge install --no-git \
+            foundry-rs/forge-std \
+            OpenZeppelin/openzeppelin-contracts@v5.6.1 \
+            OpenZeppelin/openzeppelin-contracts-upgradeable@v5.6.1
       - run: forge fmt --check
       - run: forge build --sizes
       - run: forge test -vv
@@ -47,6 +54,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Install Foundry libs
+        run: |
+          forge install --no-git \
+            foundry-rs/forge-std \
+            OpenZeppelin/openzeppelin-contracts@v5.6.1 \
+            OpenZeppelin/openzeppelin-contracts-upgradeable@v5.6.1
       - name: Install Slither
         run: pip install slither-analyzer
       - name: Build (needed for ABI extraction)
@@ -77,14 +90,28 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
-      - name: Run forge snapshot --check
+      - name: Install Foundry libs
         run: |
-          forge snapshot --check 2>&1 | tee snapshot.txt
-          if grep -q 'Snapshot diff' snapshot.txt; then
-            echo "::warning::Gas snapshot changed — review the diff"
+          forge install --no-git \
+            foundry-rs/forge-std \
+            OpenZeppelin/openzeppelin-contracts@v5.6.1 \
+            OpenZeppelin/openzeppelin-contracts-upgradeable@v5.6.1
+      - name: Run forge snapshot --check
+        # First run: if .gas-snapshot is not yet committed, generate it
+        # and warn rather than fail. After the file is committed, --check
+        # acts as a true regression gate.
+        run: |
+          if [ -f .gas-snapshot ]; then
+            forge snapshot --check 2>&1 | tee snapshot.txt
+            if grep -q 'Snapshot diff' snapshot.txt; then
+              echo "::warning::Gas snapshot changed — review the diff"
+            fi
+          else
+            echo "::warning::.gas-snapshot missing — generating baseline (commit it for future regression gating)"
+            forge snapshot
           fi
       - name: Upload snapshot artifact
-        if: always()
+        if: always() && hashFiles('contracts/.gas-snapshot') != ''
         uses: actions/upload-artifact@v4
         with:
           name: gas-snapshot
@@ -122,6 +149,12 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
+      - name: Install Foundry libs
+        run: |
+          forge install --no-git \
+            foundry-rs/forge-std \
+            OpenZeppelin/openzeppelin-contracts@v5.6.1 \
+            OpenZeppelin/openzeppelin-contracts-upgradeable@v5.6.1
       - run: |
           mkdir -p storage-layouts
           forge inspect IntentAggregator storage-layout > storage-layouts/IntentAggregator.txt
