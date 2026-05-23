@@ -1,0 +1,35 @@
+specVersion: 1.0.0
+description: Ronin Waypoint Intent Aggregator — event indexer
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: IntentAggregator
+    network: ronin
+    source:
+      address: "0x2D3E5B0dEE29eA5641e1b0Bce08a8A7C5fF82BE5"
+      abi: IntentAggregator
+      startBlock: 55866000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./mappings/aggregator.ts
+      entities:
+        - IntentExecuted
+        - PauseEvent
+        - RoleAssignment
+      abis:
+        - name: IntentAggregator
+          file: ./abis/IntentAggregator.json
+      eventHandlers:
+        - event: "IntentExecuted(indexed bytes32,indexed address,indexed address,uint256,address,uint256,address)"
+          handler: handleIntentExecuted
+        - event: "Paused(address)"
+          handler: handlePaused
+        - event: "Unpaused(address)"
+          handler: handleUnpaused
+        - event: "RoleGranted(indexed bytes32,indexed address,indexed address)"
+          handler: handleRoleGranted
+        - event: "RoleRevoked(indexed bytes32,indexed address,indexed address)"
+          handler: handleRoleRevoked

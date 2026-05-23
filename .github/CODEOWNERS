@@ -1,0 +1,17 @@
+# Default reviewers for everything
+*       @vertsun/security @vertsun/core
+
+# Smart contracts require security + protocol review
+/contracts/                @vertsun/security @vertsun/protocol
+/contracts/src/            @vertsun/security @vertsun/protocol
+/contracts/script/         @vertsun/security @vertsun/devops
+/contracts/test/           @vertsun/protocol
+/contracts/foundry.toml    @vertsun/security @vertsun/devops
+/contracts/remappings.txt  @vertsun/security @vertsun/devops
+
+# Frontend and keeper
+/app/                      @vertsun/frontend
+/keeper/                   @vertsun/devops @vertsun/protocol
+
+# CI & workflows
+/.github/                  @vertsun/devops @vertsun/security

@@ -1,0 +1,24 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/app"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels: ["deps", "frontend"]
+    reviewers: ["vertsun/frontend"]
+
+  - package-ecosystem: "npm"
+    directory: "/keeper"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels: ["deps", "keeper"]
+    reviewers: ["vertsun/devops"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels: ["deps", "ci"]
+    reviewers: ["vertsun/devops"]

@@ -1,0 +1,45 @@
+type IntentExecuted @entity(immutable: true) {
+  id: Bytes!                       # txHash + logIndex
+  intentHash: Bytes!
+  user: Bytes!                     # buyer
+  nftContract: Bytes!
+  tokenId: BigInt!
+  tokenAddress: Bytes!             # off-chain payment token
+  amount: BigInt!
+  keeper: Bytes!                   # shard that executed
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type PauseEvent @entity(immutable: true) {
+  id: Bytes!
+  kind: String!                    # "Paused" | "Unpaused"
+  account: Bytes!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}
+
+type RoleAssignment @entity(immutable: true) {
+  id: Bytes!
+  kind: String!                    # "Granted" | "Revoked"
+  role: Bytes!                     # keccak256("ADMIN_ROLE") etc.
+  account: Bytes!
+  sender: Bytes!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}
+
+# Aggregations for fast dashboard reads
+type DailyVolume @entity {
+  id: ID!                          # YYYY-MM-DD
+  date: String!
+  intentCount: BigInt!
+  totalAmount: BigInt!             # sum of all `amount` recorded
+}
+
+type KeeperStats @entity {
+  id: Bytes!                       # keeper address
+  intentsExecuted: BigInt!
+  lastSeenAt: BigInt!
+}
