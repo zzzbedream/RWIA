@@ -329,7 +329,6 @@ function Roadmap() {
     const phases: Array<{
         tagKey: import("@/lib/i18n").StringKey;
         titleKey: import("@/lib/i18n").StringKey;
-        risksKey?: import("@/lib/i18n").StringKey;
         items: import("@/lib/i18n").StringKey[];
         tone: string;
     }> = [
@@ -342,14 +341,12 @@ function Roadmap() {
         {
             tagKey: "road.phase1.tag",
             titleKey: "road.phase1.title",
-            risksKey: "road.phase1.risks",
             items: ["road.phase1.item1", "road.phase1.item2", "road.phase1.item3", "road.phase1.item4"],
             tone: "border-indigo-400/30 text-indigo-300",
         },
         {
             tagKey: "road.phase2.tag",
             titleKey: "road.phase2.title",
-            risksKey: "road.phase2.risks",
             items: ["road.phase2.item1", "road.phase2.item2", "road.phase2.item3", "road.phase2.item4"],
             tone: "border-violet-400/30 text-violet-300",
         },
@@ -391,11 +388,6 @@ function Roadmap() {
                                 <h3 className="text-xl md:text-2xl font-bold tracking-tight text-white">
                                     {t(phase.titleKey)}
                                 </h3>
-                                {phase.risksKey && (
-                                    <div className="text-xs text-amber-300/80 font-medium">
-                                        {t(phase.risksKey)}
-                                    </div>
-                                )}
                                 <ul className="space-y-2 mt-2">
                                     {phase.items.map((itemKey) => (
                                         <li key={itemKey} className="flex gap-3 text-sm text-white/65 leading-relaxed">
