@@ -11,7 +11,7 @@
     },
     "dependencies": {
         "@sky-mavis/waypoint": "^4.2.2",
-        "@supabase/supabase-js": "^2.106.1",
+        "@supabase/supabase-js": "^2.106.2",
         "@tanstack/react-query": "^5.62.0",
         "framer-motion": "^12.38.0",
         "lucide-react": "^0.460.0",
